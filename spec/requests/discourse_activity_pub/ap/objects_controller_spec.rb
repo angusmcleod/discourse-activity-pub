@@ -251,6 +251,22 @@ RSpec.describe DiscourseActivityPub::AP::ObjectsController do
         end
       end
 
+      context "with a new actor" do
+        let(:new_actor) { build_actor_json(keypair.public_key.to_pem) }
+        let(:headers) { build_headers(custom_key_id: new_actor[:publicKey][:id], custom_keypair: keypair) }
+
+        before do
+          stub_request(:get, new_actor[:id])
+            .to_return(body: new_actor.to_json, headers: { "Content-Type" => "application/json" }, status: 200)
+        end
+
+        it "succeeds and creates the actor" do
+          get_object(object, headers: headers)
+          expect(response.status).to eq(200)
+          expect(DiscourseActivityPubActor.exists?(ap_id: new_actor[:id])).to eq(true)
+        end
+      end
+
       context "with a post request" do
         let(:body) { build_activity_json(object: group) }
         let(:invalid_digest) { Digest::SHA256.base64digest("invalid body") }

@@ -8,20 +8,16 @@ RSpec.describe DiscourseActivityPub::AP::Actor do
     let(:json) do
       {
         '@context': 'https://www.w3.org/ns/activitystreams',
-        id: "https://external.com/u/angus",
-        type: "Person",
-        inbox: "https://external.com/u/angus/inbox",
-        outbox: "https://external.com/u/angus/outbox",
-        preferredUsername: "angus",
-        name: "Angus McLeod"
-      }.with_indifferent_access
+        'id': "https://external.com/u/angus",
+        'type': "Person",
+        'inbox': "https://external.com/u/angus/inbox",
+        'outbox': "https://external.com/u/angus/outbox",
+        'preferredUsername': "angus",
+        'name': "Angus McLeod"
+      }.as_json
     end
 
-    let(:subject) do
-      actor = described_class.new
-      actor.json = json
-      actor
-    end
+    let!(:subject) { described_class.factory(json) }
 
     it "creates an actor" do
       subject.update_stored_from_json
@@ -40,7 +36,7 @@ RSpec.describe DiscourseActivityPub::AP::Actor do
       subject.update_stored_from_json
 
       json['name'] = "Bob McLeod"
-      subject.json = json
+      subject.json = json.with_indifferent_access
       subject.update_stored_from_json
 
       actor = DiscourseActivityPubActor.find_by(ap_id: json['id'])
@@ -52,10 +48,22 @@ RSpec.describe DiscourseActivityPub::AP::Actor do
 
       original_id = json['id']
       json['id'] = "https://external.com/u/bob"
-      subject.json = json
+      subject.json = json.with_indifferent_access
       subject.update_stored_from_json
 
       expect(DiscourseActivityPubActor.exists?(ap_id: original_id)).to eq(true)
+      expect(DiscourseActivityPubActor.exists?(ap_id: json['id'])).to eq(true)
+    end
+
+    it "updates an actor if id has changed and id change is allowed" do
+      subject.update_stored_from_json
+
+      original_id = json['id']
+      json['id'] = "https://external.com/u/bob"
+      subject.json = json.with_indifferent_access
+      subject.update_stored_from_json(actor_id: original_id, allow_id_change: true)
+
+      expect(DiscourseActivityPubActor.exists?(ap_id: original_id)).to eq(false)
       expect(DiscourseActivityPubActor.exists?(ap_id: json['id'])).to eq(true)
     end
 

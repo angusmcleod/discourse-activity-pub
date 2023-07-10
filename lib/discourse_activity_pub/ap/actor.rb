@@ -59,11 +59,17 @@ module DiscourseActivityPub
         }
       end
 
-      def update_stored_from_json(stored_id = nil)
+      def update_stored_from_json(actor_id: nil, allow_id_change: false)
         return false unless json
 
         DiscourseActivityPubActor.transaction do
           @stored = DiscourseActivityPubActor.find_by(ap_id: json[:id])
+
+          # id has changed and id change is allowed
+          if !stored && allow_id_change && actor_id
+            @stored = DiscourseActivityPubActor.find_by(ap_id: actor_id)
+            stored.ap_id = json[:id]
+          end
 
           # id has changed
           if !stored && stored_id
@@ -102,14 +108,14 @@ module DiscourseActivityPub
         stored
       end
 
-      def self.resolve_and_store(actor_id, stored: false)
+      def self.resolve_and_store(actor_id, allow_id_change: false)
         resolved_actor = DiscourseActivityPub::JsonLd.resolve_object(actor_id)
         return process_failed(actor_id, "cant_resolve_actor") unless resolved_actor.present?
 
         ap_actor = factory(resolved_actor)
         return process_failed(resolved_actor['id'], "actor_not_supported") unless ap_actor&.can_belong_to.include?(:remote)
 
-        ap_actor.update_stored_from_json(stored ? actor_id : nil)
+        ap_actor.update_stored_from_json(actor_id: actor_id, allow_id_change: allow_id_change)
 
         ap_actor
       end
