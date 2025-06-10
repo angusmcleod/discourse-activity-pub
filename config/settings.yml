@@ -2,6 +2,8 @@ discourse_activity_pub:
   activity_pub_enabled:
     default: true
     client: true
+  activity_pub_rate_limit_nodeinfo_per_minute:
+    default: 5
   activity_pub_rate_limit_post_to_inbox_per_minute:
     default: 10
   activity_pub_rate_limit_get_objects_per_minute:

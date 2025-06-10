@@ -103,6 +103,16 @@ RSpec.describe DiscourseActivityPub::NodeinfoController do
           { nodeName: SiteSetting.title, nodeDescription: SiteSetting.site_description }.as_json,
         )
       end
+
+      it "rate limits requests" do
+        SiteSetting.activity_pub_rate_limit_nodeinfo_per_minute = 1
+        RateLimiter.enable
+        RateLimiter.clear_all_global!
+
+        get "/nodeinfo/#{DiscourseActivityPub::Nodeinfo::VERSION}"
+        get "/nodeinfo/#{DiscourseActivityPub::Nodeinfo::VERSION}"
+        expect(response.status).to eq(429)
+      end
     end
   end
 end
